@@ -1,7 +1,7 @@
 <template>
 <div class="topic-wrap" @click="menuShow=false">
   <div class="loading-wrap" v-if="!loading">loading...</div>
-  <div style="position: relative" v-else>
+  <div style="position: relative;overflow: hidden" v-else>
     <!--页面头部-->
     <div class="topic-content-header">
         <div class="icon-arrow-left2" @click="goBack"></div>
@@ -422,9 +422,11 @@
           font-size 14px
           font-weight bold
         & > p
+          flex 1
           margin 14px 0
           padding 0 6px
           font-size 14px
+          overflow hidden
         & > ul
           margin 14px 0
           padding-left 40px
@@ -440,6 +442,7 @@
               list-style circle
         .code
           font-family monospace,monospace
+          overflow hidden
     .split
       width 100%
       height 16px

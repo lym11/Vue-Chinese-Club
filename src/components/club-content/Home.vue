@@ -46,11 +46,12 @@
     export default {
       data () {
           return {
+            loadingData: false, // 是否在加载数据
             state: 0, // state = 0 代表初始状态, state = 1 代表刷新 , state = 2 代表加载更多
-            refresh: false,
-            refreshText: '正在刷新...',
-            loadMore: false,
-            loadMoreText: '正在加载...'
+            refresh: false, // 是否在刷新
+            refreshText: '正在刷新...', // 刷新提示文字
+            loadMore: false, // 是否在加载更多
+            loadMoreText: '正在加载...' // 加载提示文字
           }
       },
       created () {
@@ -59,12 +60,15 @@
           this._initScroll()
           let self = this
           this.scrollWrap.on('scrollEnd', function () {
+            // 满足刷新状态执行刷新函数和刷新时提示文字函数
             if (self.state === 1) {
               self.refreshTips(true, '正在刷新...')
-              self.$store.dispatch('loadMore')
               self.refreshData()
             }
+            // 满足加载更多状态执行加载更多函数和加载更多提示文字函数
             if (self.state === 2) {
+              self.loadMoreTips(true, '正在加载...')
+              self.loadMoreData()
             }
           })
         })
@@ -74,10 +78,10 @@
           this._initScroll()
           let self = this
           this.scrollWrap.on('scroll', function () {
-            if (this.y > 40) {
+            if (this.y > 40 && self.loadingData === false) {
               self.state = 1
             }
-            if (this.y < this.maxScrollY - 40) {
+            if (Math.floor(this.y) < this.maxScrollY - 100 && self.loadingData === false) {
               self.state = 2
             }
           })
@@ -91,39 +95,66 @@
           this.$store.dispatch('changeTab', tab)
           this.$store.dispatch('getData')
         },
+        // 初始化和实例化IScroll
         _initScroll () {
           this.scrollWrap = new IScroll(this.$refs.scrollWrap, {
             click: true,
             probeType: 3,
             mouseWheel: true,
             scrollY: true,
-            useTransition: false,
-            topOffset: 40
+            useTransition: false
           })
         },
         refreshTips (state, text) {
           this.refresh = state
           this.refreshText = text
         },
-        refreshData () {
-            this.$axios.get(`https://www.vue-js.com/api/v1/${this.$store.state.homeContent.topicTabType}`)
-              .then(res => {
-                this.$store.dispatch('getData')
-                this.refreshTips(true, '刷新成功...')
-                this.state = 0
-                setTimeout(() => {
-                  this.refreshTips(false, '')
-                }, 500)
-              })
-              .catch(err => {
-                console.log(err)
-                this.refreshTips(true, '刷新失败...')
-                setTimeout(() => {
-                  this.refreshTips(false, '')
-                }, 500)
-              })
+        loadMoreTips (state, text) {
+          this.loadMore = state
+          this.loadMoreText = text
         },
-        loadMoreData () {}
+        // 刷新函数
+        async refreshData () {
+          try {
+            this.loadingData = true
+            await this.$store.dispatch('getData')
+            this.refreshTips(true, '刷新成功!')
+            this.state = 0
+            await setTimeout(() => {
+              this.scrollWrap.refresh()
+            }, 10)
+            setTimeout(() => {
+              this.refreshTips(false, '')
+              this.loadingData = false
+            }, 500)
+          } catch (err) {
+            this.refreshTips(true, '刷新失败!')
+            setTimeout(() => {
+              this.refreshTips(false, '')
+            }, 500)
+          }
+        },
+        // 加载更多函数
+        async loadMoreData () {
+          try {
+            this.loadingData = true
+            await this.$store.dispatch('loadMore')
+            this.loadMoreTips(true, '加载成功!')
+            this.state = 0
+            await setTimeout(() => {
+              this.scrollWrap.refresh()
+            }, 10)
+            setTimeout(() => {
+              this.loadingData = false
+              this.loadMoreTips(false, '')
+            }, 500)
+          } catch (err) {
+            this.loadMoreTips(true, '加载失败!')
+            setTimeout(() => {
+              this.loadMoreTips(false, '')
+            }, 500)
+          }
+        }
       }
     }
 </script>
